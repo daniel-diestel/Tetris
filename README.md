@@ -27,7 +27,7 @@ Cross-platform compatible and ideal for learning or extending classic game mecha
 ### 🔧 Building from Command Line (Linux/macOS/WSL)
 
 ```bash
-git clone https://github.com/Tachidomaru/Tetris.git
+git clone https://github.com/diestel-daniel/Tetris.git
 cd Tetris
 mkdir build && cd build
 cmake ..
