@@ -13,9 +13,41 @@
 #include "GameState.hpp"
 #include "GravityTable.hpp"
 #include "HighscoreManager.hpp"
+#include <filesystem>
+#include <mach-o/dyld.h>
+#include <limits.h>
+#include <cstdlib>
+
+std::filesystem::path getResourcePath()
+{
+    char path[PATH_MAX];
+    uint32_t size = sizeof(path);
+
+    _NSGetExecutablePath(path, &size);
+
+    std::filesystem::path executable =
+        std::filesystem::canonical(path);
+
+    return executable.parent_path()
+               .parent_path() /
+           "Resources";
+}
+
+std::filesystem::path getSavePath()
+{
+    const char *home = std::getenv("HOME");
+
+    auto path = std::filesystem::path(home) / "Library/Application Support/Tetris";
+
+    std::filesystem::create_directories(path);
+
+    return path / "highscore.json";
+}
 
 int main()
 {
+    std::filesystem::path assets = getResourcePath() / "assets";
+
     sf::RenderWindow window(sf::VideoMode({WINDOW_WIDTH, WINDOW_HEIGHT}), "Tetris", sf::Style::Titlebar | sf::Style::Close);
     window.setFramerateLimit(60);
 
@@ -23,26 +55,22 @@ int main()
     Renderer renderer;
     TetrominoBag bag;
     GameState gameState;
-    HighscoreManager highscoreManager("highscore.json");
+    HighscoreManager highscoreManager(
+        getSavePath().string());
 
+    renderer.loadTextures(
+        (assets / "images/minos.png").string(),
+        (assets / "images/board.png").string(),
+        (assets / "images/ghost_minos.png").string());
 
-    if (!renderer.loadTextures("assets/images/minos.png", "assets/images/board.png", "assets/images/ghost_minos.png")) 
-    {
-        std::cerr << "Texturen konnten nicht geladen werden.\n";
-        return 1;
-    }
-
-    if (!renderer.loadFont("assets/fonts/Minecraft.ttf")) 
-    {
-        std::cerr << "Font konnte nicht geladen werden.\n";
-        return 1;
-    }
+    renderer.loadFont(
+        (assets / "fonts/Minecraft.ttf").string());
 
     enum class GameMode { Start, Playing, Paused, GameOver };
     GameMode gameMode = GameMode::Start;
 
     sf::Font font;
-    font.openFromFile("assets/fonts/Minecraft.ttf");
+    font.openFromFile((assets / "fonts/Minecraft.ttf").string());
 
     sf::Clock blinkClock;
     const float blinkInterval = 0.5f;
@@ -53,8 +81,9 @@ int main()
     startText.setPosition({WINDOW_WIDTH / 2.f - 160.f, WINDOW_HEIGHT / 2.f - 40.f});
 
     sf::Texture startTexture;
-    startTexture.loadFromFile("assets/images/startscreen.png");
-    
+    startTexture.loadFromFile(
+        (assets / "images/startscreen.png").string());
+
     sf::Sprite startScreen(startTexture);
 
     sf::Text pauseText(font, "           Pause\n\n\nPress 'P' to continue", 32);
@@ -89,11 +118,8 @@ int main()
     const float lockDelayTime = 0.5f;
 
     sf::Music music;
-    if (!music.openFromFile("assets/audio/Tetris_Theme_Loop.ogg")) 
-    {
-        std::cerr << "Musik konnte nicht geladen werden.\n";
-        return 1;
-    }
+    music.openFromFile(
+        (assets / "audio/Tetris_Theme_Loop.ogg").string());
 
     music.setLooping(true);
     music.setVolume(100.f);
